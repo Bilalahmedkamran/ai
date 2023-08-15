@@ -1,0 +1,91 @@
+import multiprocessing
+
+import pika
+
+ 
+
+A = 2
+
+B = 6
+
+max_iter = int(input("Enter the number of iterations: "))
+
+ 
+
+def _multiply_(max_iter):
+
+    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+
+    channel = connection.channel()
+
+    channel.queue_declare(queue='floop1')
+
+   
+
+    for _ in range(max_iter):
+
+        body = None
+
+        while body is None:
+
+            _,_,body = channel.basic_get(queue='floop2')
+
+        X  = (int(body) * B)
+
+        print("For Loop 01: ", X)
+
+        channel.basic_publish(exchange='', routing_key='floop1', body=str(X))
+
+    connection.close()
+
+ 
+
+def _square_(max_iter):
+
+    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
+
+    channel = connection.channel()
+
+    channel.queue_declare(queue='floop2')
+
+    channel.basic_publish(exchange='', routing_key='floop2', body=str(A))
+
+    for _ in range(max_iter):
+
+        body = None
+
+        while body is None:
+
+            _,_,body = channel.basic_get(queue='floop1')
+
+        X  = int(body) ** 2
+
+        print("For Loop 02: ", X)
+
+        channel.basic_publish(exchange='', routing_key='floop2', body=str(X))
+
+    connection.close()
+
+ 
+
+if __name__ == "__main__":
+
+    p1 = multiprocessing.Process(target=_square_, args=(max_iter,))
+
+    p2 = multiprocessing.Process(target=_multiply_, args=(max_iter,))
+
+   
+
+    p1.start()
+
+    p2.start()
+
+   
+
+    p1.join()
+
+    p2.join()
+
+   
+
+    print("Done!")
